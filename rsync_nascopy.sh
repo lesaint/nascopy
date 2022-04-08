@@ -195,7 +195,6 @@ fi
 # -----------------------------------------------------------------------------
 
 export IFS=$'\n' # Better for handling spaces in filenames.
-DEST="$DEST_FOLDER"
 INPROGRESS_FILENAME="nascopy.inprogress"
 INPROGRESS_FILE="$DEST_FOLDER/$INPROGRESS_FILENAME"
 
@@ -212,8 +211,8 @@ fi
 # Fail if destination folder doesn't exists
 # -----------------------------------------------------------------------------
 
-if [ -z "$(fn_find "$DEST -type d" 2>/dev/null)" ]; then
-    fn_log_error "Destination $SSH_FOLDER_PREFIX$DEST does not exist"
+if [ -z "$(fn_find "$DEST_FOLDER -type d" 2>/dev/null)" ]; then
+    fn_log_error "Destination $SSH_FOLDER_PREFIX$DEST_FOLDER does not exist"
     exit 1
 fi
 
@@ -225,7 +224,7 @@ LOG_FILE="$PROFILE_FOLDER/$(date +"%Y-%m-%d-%H%M%S").log"
 
 fn_log_info "Starting NAS copy..."
 fn_log_info "From: $SRC_FOLDER"
-fn_log_info "To:   $SSH_FOLDER_PREFIX$DEST"
+fn_log_info "To:   $SSH_FOLDER_PREFIX$DEST_FOLDER"
 
 CMD="rsync"
 if [ -n "$SSH_CMD" ]; then
@@ -256,14 +255,14 @@ if [ -n "$EXCLUSION_FILE" ]; then
     # We've already checked that $EXCLUSION_FILE doesn't contain a single quote
     CMD="$CMD --exclude-from '$EXCLUSION_FILE'"
 fi
-CMD="$CMD -- '$SRC_FOLDER/' '$SSH_FOLDER_PREFIX$DEST/'"
+CMD="$CMD -- '$SRC_FOLDER/' '$SSH_FOLDER_PREFIX$DEST_FOLDER/'"
 CMD="$CMD | grep -E '^deleting|[^/]$'"
 
 fn_log_info "Running command:"
 fn_log_info "$CMD"
 
 # give user permission to write in target directory to be able to create inprogress file
-fn_chmod_dir "u+w" "$DEST"
+fn_chmod_dir "u+w" "$DEST_FOLDER"
 fn_touch "$INPROGRESS_FILE"
 eval $CMD
 
@@ -295,7 +294,7 @@ fi
 # change owner, group and permissions
 # -----------------------------------------------------------------------------
 if [ -n "$OWNER_AND_GROUP" ]; then
-    fn_chown_all "$OWNER_AND_GROUP" "$DEST"
+    fn_chown_all "$OWNER_AND_GROUP" "$DEST_FOLDER"
 fi
 
 # remove in progress file before we make it readonly
@@ -304,7 +303,7 @@ fn_rm "$INPROGRESS_FILE"
 # "u=rX,g=-,o=-"
 # * u=rX: files are readonly, directories can be opened for user
 # * g=-,o=-: group and others have no permissions
-fn_chmod_dir "u=rX,g=-,o=-" "$DEST"
+fn_chmod_dir "u=rX,g=-,o=-" "$DEST_FOLDER"
 
 # -----------------------------------------------------------------------------
 # finalize and exit
