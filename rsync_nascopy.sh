@@ -90,10 +90,6 @@ fn_touch() {
     touch -- "$1"
 }
 
-fn_chown_all() {
-    chown -R -- "$1" "$2"
-}
-
 fn_chmod_dir() {
     local options="$1"
     local target="$2"
@@ -118,7 +114,6 @@ SSH_FOLDER_PREFIX=""
 SRC_FOLDER="${1%/}"
 DEST_FOLDER="${2%/}"
 EXCLUSION_FILE="$3"
-OWNER_AND_GROUP="$4"
 
 fn_parse_ssh
 
@@ -287,13 +282,6 @@ fi
 if [ -n "$(grep "rsync error:" "$LOG_FILE")" ]; then
     fn_log_error "Rsync reported an error, please check '$LOG_FILE' for more details."
     exit 1
-fi
-
-# -----------------------------------------------------------------------------
-# change owner, group and permissions
-# -----------------------------------------------------------------------------
-if [ -n "$OWNER_AND_GROUP" ]; then
-    fn_chown_all "$OWNER_AND_GROUP" "$DEST_FOLDER"
 fi
 
 # remove in progress file before we make it readonly
