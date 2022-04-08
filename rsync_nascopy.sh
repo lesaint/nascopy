@@ -273,6 +273,7 @@ if [ -n "$OWNER_AND_GROUP" ]; then
 fi
 
 # remove in progress file before we make it readonly
+fn_log_info "Deleting inprogress file"
 fn_rm "$INPROGRESS_FILE"
 
 # "u=rX,g=-,o=-"
@@ -285,7 +286,6 @@ fn_chmod_all "u=rX,g=-,o=-" "$DEST_FOLDER"
 # -----------------------------------------------------------------------------
 
 fn_log_info "Deleting $PID_FILE"
-
 rm -f -- "$PID_FILE"
 rm -f -- "$LOG_FILE"
 
