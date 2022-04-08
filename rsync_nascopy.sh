@@ -2,6 +2,7 @@
 
 #
 # TODO
+# * fix exit midway not deleting pid file
 # * use SSH remote shell when the source directory is remote
 # * enable bash strict mode (set -euo pipefail)
 #    * parse input parameters elegantly
@@ -47,17 +48,21 @@ trap 'fn_terminate_script' SIGINT
 # Small utility functions for reducing code duplication
 # -----------------------------------------------------------------------------
 
+fn_is_ssh_directory() {
+    [[ "$1" =~ ^[A-Za-z0-9\._%\+\-]+@[A-Za-z0-9.\-]+\:.+$ ]]
+}
+
 fn_parse_ssh() {
-    if [[ "$DEST_FOLDER" =~ ^[A-Za-z0-9\._%\+\-]+@[A-Za-z0-9.\-]+\:.+$ ]]; then
-        SSH_USER=$(echo "$DEST_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\1/')
-        SSH_HOST=$(echo "$DEST_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\2/')
-        SSH_DEST_FOLDER=$(echo "$DEST_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\3/')
+    if fn_is_ssh_directory "$SRC_FOLDER"; then
+        SSH_USER=$(echo "$SRC_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\1/')
+        SSH_HOST=$(echo "$SRC_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\2/')
+        SSH_SRC_FOLDER=$(echo "$SRC_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\3/')
         SSH_CMD="ssh ${SSH_USER}@${SSH_HOST}"
         SSH_FOLDER_PREFIX="${SSH_USER}@${SSH_HOST}:"
     fi
 }
 
-fn_run_cmd() {
+fn_run_dest_cmd() {
     if [ -n "$SSH_CMD" ]; then
         eval "$SSH_CMD '$1'"
     else
@@ -65,32 +70,36 @@ fn_run_cmd() {
     fi
 }
 
+fn_find_dir() {
+    find "$1" -type d  2>/dev/null
+}
+
 fn_find() {
-    fn_run_cmd "find $1"  2>/dev/null
+    find "$1"  2>/dev/null
 }
 
 fn_rm() {
-    fn_run_cmd "rm -rf -- $1"
+    rm -rf -- "$1"
 }
 
 fn_touch() {
-    fn_run_cmd "touch -- $1"
+    touch -- "$1"
 }
 
 fn_chown_all() {
-    fn_run_cmd "chown -R -- $1 $2"
+    chown -R -- "$1" "$2"
 }
 
 fn_chmod_dir() {
     local options="$1"
     local target="$2"
-    fn_run_cmd "chmod $options -- $target"
+    chmod "$options" -- "$target"
 }
 
 fn_chmod_all() {
     local options="$1"
     local target="$2"
-    fn_run_cmd "chmod -R $options -- $target"
+    chmod -R "$options" -- "$target"
 }
 
 # -----------------------------------------------------------------------------
@@ -98,7 +107,7 @@ fn_chmod_all() {
 # -----------------------------------------------------------------------------
 SSH_USER=""
 SSH_HOST=""
-SSH_DEST_FOLDER=""
+SSH_SRC_FOLDER=""
 SSH_CMD=""
 SSH_FOLDER_PREFIX=""
 
@@ -109,8 +118,8 @@ OWNER_AND_GROUP="$4"
 
 fn_parse_ssh
 
-if [ -n "$SSH_DEST_FOLDER" ]; then
-    DEST_FOLDER="$SSH_DEST_FOLDER"
+if [ -n "$SSH_SRC_FOLDER" ]; then
+    SRC_FOLDER="$SSH_SRC_FOLDER"
 fi
 
 for ARG in "$SRC_FOLDER" "$DEST_FOLDER" "$EXCLUSION_FILE"; do
@@ -149,8 +158,13 @@ fn_log_info "Creating $PID_FILE"
 echo "$$" > "$PID_FILE"
 
 # -----------------------------------------------------------------------------
-# Check that the destination drive is a nascopy drive
+# Check that the destination directory is not remote and is a nascopy drive
 # -----------------------------------------------------------------------------
+
+if fn_is_ssh_directory "$DEST_FOLDER"; then
+    fn_log_error "Destination file can not be remote"
+    exit 1
+fi
 
 fn_find_nascopy_marker() {
     fn_find "$MARKER_FILE" 2>/dev/null
@@ -186,7 +200,7 @@ fi
 # Fail if destination folder doesn't exists
 # -----------------------------------------------------------------------------
 
-if [ -z "$(fn_find "$DEST_FOLDER -type d" 2>/dev/null)" ]; then
+if [ -z "$(fn_find_dir "$DEST_FOLDER" 2>/dev/null)" ]; then
     fn_log_error "Destination $SSH_FOLDER_PREFIX$DEST_FOLDER does not exist"
     exit 1
 fi
@@ -198,8 +212,8 @@ fi
 LOG_FILE="$PROFILE_FOLDER/$(date +"%Y-%m-%d-%H%M%S").log"
 
 fn_log_info "Starting NAS copy..."
-fn_log_info "From: $SRC_FOLDER"
-fn_log_info "To:   $SSH_FOLDER_PREFIX$DEST_FOLDER"
+fn_log_info "From: $SSH_FOLDER_PREFIX$SRC_FOLDER"
+fn_log_info "To:   $DEST_FOLDER"
 
 CMD="rsync"
 if [ -n "$SSH_CMD" ]; then
@@ -230,7 +244,7 @@ if [ -n "$EXCLUSION_FILE" ]; then
     # We've already checked that $EXCLUSION_FILE doesn't contain a single quote
     CMD="$CMD --exclude-from '$EXCLUSION_FILE'"
 fi
-CMD="$CMD -- '$SRC_FOLDER/' '$SSH_FOLDER_PREFIX$DEST_FOLDER/'"
+CMD="$CMD -- '$SSH_FOLDER_PREFIX$SRC_FOLDER/' '$DEST_FOLDER/'"
 CMD="$CMD | grep -E '^deleting|[^/]$'"
 
 fn_log_info "Running command:"
