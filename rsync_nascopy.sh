@@ -84,6 +84,12 @@ fn_chown_all() {
 fn_chmod_dir() {
     local options="$1"
     local target="$2"
+    fn_run_cmd "chmod $options -- $target"
+}
+
+fn_chmod_all() {
+    local options="$1"
+    local target="$2"
     fn_run_cmd "chmod -R $options -- $target"
 }
 
@@ -272,7 +278,7 @@ fn_rm "$INPROGRESS_FILE"
 # "u=rX,g=-,o=-"
 # * u=rX: files are readonly, directories can be opened for user
 # * g=-,o=-: group and others have no permissions
-fn_chmod_dir "u=rX,g=-,o=-" "$DEST_FOLDER"
+fn_chmod_all "u=rX,g=-,o=-" "$DEST_FOLDER"
 
 # -----------------------------------------------------------------------------
 # finalize and exit
