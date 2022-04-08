@@ -49,15 +49,6 @@ trap 'fn_terminate_script' SIGINT
 # Small utility functions for reducing code duplication
 # -----------------------------------------------------------------------------
 
-fn_parse_date() {
-    # Converts YYYY-MM-DD-HHMMSS to YYYY-MM-DD HH:MM:SS and then to Unix Epoch.
-    case "$OSTYPE" in
-        linux*) date -d "${1:0:10} ${1:11:2}:${1:13:2}:${1:15:2}" +%s ;;
-        cygwin*) date -d "${1:0:10} ${1:11:2}:${1:13:2}:${1:15:2}" +%s ;;
-        darwin*) date -j -f "%Y-%m-%d-%H%M%S" "$1" "+%s" ;;
-    esac
-}
-
 fn_parse_ssh() {
     if [[ "$DEST_FOLDER" =~ ^[A-Za-z0-9\._%\+\-]+@[A-Za-z0-9.\-]+\:.+$ ]]; then
         SSH_USER=$(echo "$DEST_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\1/')
@@ -80,24 +71,12 @@ fn_find() {
     fn_run_cmd "find $1"  2>/dev/null
 }
 
-fn_get_absolute_path() {
-    fn_run_cmd "cd $1;pwd"
-}
-
 fn_rm() {
     fn_run_cmd "rm -rf -- $1"
 }
 
 fn_touch() {
     fn_run_cmd "touch -- $1"
-}
-
-fn_ln() {
-    fn_run_cmd "ln -s -- $1 $2"
-}
-
-fn_chown_dir() {
-    fn_run_cmd "chown -- $1 $2"
 }
 
 fn_chown_all() {
@@ -108,14 +87,6 @@ fn_chmod_dir() {
     local options="$1"
     local target="$2"
     fn_run_cmd "chmod -R $options -- $target"
-}
-
-fn_chown_link() {
-    local ownerAndGroup="$1"
-    local target="$2"
-    if [ -n "$ownerAndGroup" ]; then
-        fn_run_cmd "chown -h -- $ownerAndGroup $target"
-    fi
 }
 
 # -----------------------------------------------------------------------------
