@@ -233,7 +233,7 @@ CMD="$CMD --delete"
 ###     start --archive
 CMD="$CMD --recursive"
 CMD="$CMD --links"
-CMD="$CMD --perms"
+#CMD="$CMD --perms"
 CMD="$CMD --times"
 #    CMD="$CMD --group"
 #    CMD="$CMD --owner"
