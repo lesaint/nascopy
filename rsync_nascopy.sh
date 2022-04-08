@@ -166,6 +166,12 @@ if fn_is_ssh_directory "$DEST_FOLDER"; then
     exit 1
 fi
 
+# Fail if destination folder doesn't exists
+if [ -z "$(fn_find_dir "$DEST_FOLDER")" ]; then
+    fn_log_error "Destination $DEST_FOLDER does not exist"
+    exit 1
+fi
+
 fn_find_nascopy_marker() {
     fn_find "$MARKER_FILE" 2>/dev/null
 }
@@ -193,15 +199,6 @@ INPROGRESS_FILE="$DEST_FOLDER/$INPROGRESS_FILENAME"
 # -----------------------------------------------------------------------------
 if [ -n "$(fn_find "$INPROGRESS_FILE")" ]; then
     fn_log_error "NAS Copy already in progress"
-    exit 1
-fi
-
-# -----------------------------------------------------------------------------
-# Fail if destination folder doesn't exists
-# -----------------------------------------------------------------------------
-
-if [ -z "$(fn_find_dir "$DEST_FOLDER" 2>/dev/null)" ]; then
-    fn_log_error "Destination $SSH_FOLDER_PREFIX$DEST_FOLDER does not exist"
     exit 1
 fi
 
