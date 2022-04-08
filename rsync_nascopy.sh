@@ -3,11 +3,11 @@
 #
 # TODO
 # * fix exit midway not deleting pid file
-# * use SSH remote shell when the source directory is remote
 # * enable bash strict mode (set -euo pipefail)
 #    * parse input parameters elegantly
 #
 # DONE
+# * use SSH remote shell when the source directory is remote
 # * remove loop since we can't free any space
 # * make files readonly
 # * add "--delete" to rsync command to remove files which are now gone
@@ -68,6 +68,10 @@ fn_run_dest_cmd() {
     else
         eval $1
     fi
+}
+
+fn_find_dest_dir() {
+    fn_run_dest_cmd "find $1 -type d"  2>/dev/null
 }
 
 fn_find_dir() {
@@ -156,6 +160,15 @@ fi
 
 fn_log_info "Creating $PID_FILE"
 echo "$$" > "$PID_FILE"
+
+# -----------------------------------------------------------------------------
+# Fail if source folder doesn't exists
+# -----------------------------------------------------------------------------
+
+if [ -z "$(fn_find_dest_dir "$SRC_FOLDER")" ]; then
+    fn_log_error "Source $SSH_FOLDER_PREFIX$SRC_FOLDER does not exist"
+    exit 1
+fi
 
 # -----------------------------------------------------------------------------
 # Check that the destination directory is not remote and is a nascopy drive
