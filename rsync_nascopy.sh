@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 #
 # TODO
 # * use SSH remote shell when the source directory is remote
