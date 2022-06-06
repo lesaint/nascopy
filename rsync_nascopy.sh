@@ -206,7 +206,7 @@ INPROGRESS_FILE="$DEST_FOLDER/$INPROGRESS_FILENAME"
 # Handle case where a previous nascopy failed or was interrupted.
 # -----------------------------------------------------------------------------
 if [ -n "$(fn_find "$INPROGRESS_FILE")" ]; then
-    fn_log_error "NAS Copy already in progress"
+    fn_log_error "NAS Copy already in progress ($INPROGRESS_FILE exists)"
     exit 1
 fi
 
