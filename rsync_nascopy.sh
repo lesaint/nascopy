@@ -224,6 +224,17 @@ CMD="rsync"
 if [ -n "$SSH_CMD" ]; then
     CMD="$CMD  -e 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'"
 fi
+
+# run rync as super user on the remote source to allow reading files/directories
+# regardless of permissions
+# need to configure sudoers on the remote source to avoid input password
+# source: https://stackoverflow.com/a/9590132
+# on target, edit /usr/etc/sudoers, add:
+# Cmd_Alias       RSYNC = /usr/bin/rsync
+# phanas2admin    ALL=(ALL) NOPASSWD: RSYNC
+# source: https://serverfault.com/a/1074926
+CMD="$CMD --rsync-path='sudo rsync'"
+
 CMD="$CMD --compress"
 CMD="$CMD --numeric-ids"
 CMD="$CMD --safe-links"
